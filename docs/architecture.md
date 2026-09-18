@@ -38,7 +38,7 @@ Agent Gatehouse provisions a powerful project VM for coding agents and a separat
 - External network enforcement and gateway administration are outside worker authority, including worker cloud IAM.
 - Initial application traffic is HTTP(S). AWS signing and full cloud CLI compatibility are deferred.
 - Public repository: no live credentials or sensitive deployment state in source control.
-- Cloud provider, IaC tool, exact versions, and management transport are undecided.
+- Azure with Bicep is selected for the initial implementation. Exact versions and management transport are undecided. Future AWS infrastructure will be independently implemented.
 
 ## 3. Context and Scope
 
@@ -61,6 +61,8 @@ Worker tools send HTTP(S) requests through an explicit proxy. TLS interception e
 External firewall/routing controls prohibit direct worker egress. DNS, IPv6, metadata endpoints, and operational exceptions form part of that design. A private operator channel provides management without exposing gateway administration to the worker. Exact networking depends on the selected provider.
 
 ## 4. Solution Strategy
+
+Implement Azure-specific infrastructure in `infra/azure/` using Bicep. Keep reusable guest setup in `bootstrap/` and behavioral acceptance checks in `tests/acceptance/`. Add an independent `infra/aws/` implementation only when needed; shared requirements do not require shared resource definitions. See [ADR-007](adr.md#adr-007-azure-first-with-bicep-and-independent-provider-implementations).
 
 Use the worker VM as the disposable local blast-radius boundary. Containers organize development tools and workspaces; they are not initially independent security tenants.
 
@@ -149,11 +151,11 @@ Initial logical deployment: one project worker VM and one separate gateway host/
 | Worker VM | Agent runtimes, Docker/development images, workspaces, proxy client configuration | Broad local project freedom; no infrastructure/gateway administration |
 | Gateway host | Agent Vault, protected credential/state storage, public-web/upstream connections | Operator-managed; agent access limited to necessary proxy/session endpoints |
 | Network boundary | Firewall/routing and explicit operational exceptions | Operator/IaC only, inaccessible through worker IAM |
-| Protected IaC state | Infrastructure metadata and any sensitive state | Operator-controlled, never public Git |
+| Protected deployment metadata | Azure deployment history, parameters, and any sensitive deployment artifacts; no separate Bicep state backend | Operator-controlled, never public Git |
 
 ### Infrastructure Level 2
 
-Provider-specific subnets, security groups/firewalls, DNS arrangement, disks, secret provisioning, and private management transport remain open. Select these together so the no-bypass property survives worker root access. Do not assign a broad managed identity or instance role to the worker.
+Azure subnet layout, network security group rules, DNS arrangement, disks, secret provisioning, and private management transport remain open. Select these together so the no-bypass property survives worker root access. Do not assign a broad managed identity to the worker. The initial directory structure is present, but templates and bootstrap scripts are not yet implemented.
 
 Gateway persistence and backup are required operational concerns; worker recovery may recreate the VM. Define where unfinished work is saved before destructive recovery. There is no initial high-availability commitment or per-agent resource isolation.
 
@@ -189,6 +191,8 @@ The [ADR document](adr.md) records decisions and consequences:
 - ADR-004: Broad research with accepted residual leakage risk.
 - ADR-005: Direct cloud APIs first; trusted authentication.
 - ADR-006: Arc42 architecture plus a separate ADR history.
+- ADR-007: Azure first with Bicep and independent provider implementations.
+- ADR-008: Feature branches and pull requests; no direct commits to main.
 
 An accepted ADR records intent, not successful implementation. Supersede records when decisions change.
 

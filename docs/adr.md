@@ -14,6 +14,8 @@ All records below capture decisions agreed during the initial discussion on 2026
 | [ADR-004](#adr-004-allow-broad-research-and-accept-residual-leakage-risk) | Allow broad research and accept residual leakage risk | Accepted |
 | [ADR-005](#adr-005-prefer-cloud-apis-and-keep-authentication-trusted) | Prefer cloud APIs and keep authentication trusted | Accepted |
 | [ADR-006](#adr-006-maintain-arc42-and-a-separate-decision-history) | Maintain arc42 and a separate decision history | Accepted |
+| [ADR-007](#adr-007-azure-first-with-bicep-and-independent-provider-implementations) | Azure first with Bicep and independent provider implementations | Accepted |
+| [ADR-008](#adr-008-use-feature-branches-and-pull-requests) | Use feature branches and pull requests | Accepted |
 
 ## ADR-001: Project VM with external enforcement
 
@@ -147,6 +149,53 @@ Use `docs/architecture.md` with the template's 12 top-level arc42 sections and `
 
 Update the living architecture as the system changes. Preserve accepted records; document a changed decision in a new ADR and mark the older record superseded. Keep requirement IDs stable and link documents to avoid conflicting sources of truth.
 
+## ADR-007: Azure first with Bicep and independent provider implementations
+
+Date: 2026-09-18. Status: Accepted.
+
+### Context
+
+The owner has access to Azure and AWS and prefers Azure for the first deployment. Infrastructure complexity is low: a worker VM, a gateway, networking, and storage. Separate provider implementations are acceptable; resource portability is not a goal.
+
+### Decision
+
+Use Azure Bicep for the initial deployment under `infra/azure/`. Reserve `infra/aws/` for a future independent implementation, with its tooling chosen when needed. Share requirements, acceptance criteria, and practical Linux bootstrap logic rather than introducing a cross-cloud resource abstraction.
+
+Create `bootstrap/` for guest setup and `tests/acceptance/` for behavioral checks. Initially these directories contain scope notes; templates and executable scripts follow after the Azure network and administrative access design is settled.
+
+### Alternatives considered
+
+- Pulumi Azure Native: viable, but its separate state backend and general-purpose language toolchain are unnecessary for the selected simple Azure deployment.
+- Shared Azure/AWS resource abstractions: not required; networking and identity semantics should remain explicit per provider.
+- Implement both clouds immediately: unnecessary expansion of the first milestone.
+
+### Consequences
+
+Bicep avoids a separate IaC state backend; Azure deployment parameters, history, and outputs still require appropriate protection. A future AWS deployment duplicates some resource declarations deliberately. Shared acceptance criteria help prevent drift in security behavior. Provider/tool selection is now resolved for Azure; region, sizing, management access, and network details remain open.
+
+Affects requirement F-01 and architecture sections 2, 4, and 7. Reference: [Microsoft Bicep overview](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview).
+
+## ADR-008: Use feature branches and pull requests
+
+Date: 2026-09-18. Status: Accepted.
+
+### Context
+
+Initial project documentation and licensing were committed to `main`. The owner now requires feature branches and no direct commits to `main`.
+
+### Decision
+
+Create feature branches before making changes and integrate through pull requests. Do not commit directly to `main`. Require user authorization before merging; follow the task's scope for commits and pushes.
+
+### Alternatives considered
+
+- Continue direct commits to `main`: rejected by the owner.
+- Add a complex branching/release model: unnecessary at this stage.
+
+### Consequences
+
+Agents must check the current branch before edits and commits. This workflow applies from this decision onward and does not rewrite existing history. Repository-side branch protection is not configured by this documentation change; the recorded policy is not a claim of server-side enforcement.
+
 ## Adding a record
 
-Use the next sequential ID, a descriptive title, date, and status (`Proposed`, `Accepted`, `Rejected`, or `Superseded`). Include Context, Decision, Alternatives considered, and Consequences. Link affected requirements and evidence where relevant. Provider/tool selection remains open until explicitly decided.
+Use the next sequential ID, a descriptive title, date, and status (`Proposed`, `Accepted`, `Rejected`, or `Superseded`). Include Context, Decision, Alternatives considered, and Consequences. Link affected requirements and evidence where relevant.

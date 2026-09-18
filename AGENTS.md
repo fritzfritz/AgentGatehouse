@@ -20,7 +20,7 @@ This repository currently documents a concept. Do not describe infrastructure or
 
 ## Implementation approach
 
-Start with the smallest end-to-end deployment proving useful work, credential separation, and unavoidable gateway use. Keep provider selection explicit; do not silently assume AWS or Azure.
+Start with the smallest end-to-end deployment proving useful work, credential separation, and unavoidable gateway use. Implement Azure first using Bicep under `infra/azure/`. A future AWS implementation may use different tooling under `infra/aws/`; do not introduce a cross-cloud abstraction layer. Share bootstrap scripts and acceptance criteria where practical, while keeping network and identity configuration provider-specific.
 
 Prefer direct HTTP APIs for initial cloud integrations. Agent Vault documents refresh-token-based OAuth support; do not generalize this to every Azure identity flow or to AWS SigV4 signing. Record compatibility evidence and remaining gaps.
 
@@ -37,6 +37,8 @@ Consider IaC state, plans, crash logs, and CI artifacts as potential secret carr
 Preserve user changes. Never push, deploy cloud resources, create billable infrastructure, or change external access simply because a documentation or review task mentions them; follow the user's actual authorization.
 
 ## Documentation workflow
+
+Create a feature branch before making changes. Never commit directly to `main`; integrate changes through pull requests. Do not merge without user authorization. Branch creation does not imply authorization to push, deploy, or change repository protection settings.
 
 - `readme.md`: concise human introduction and accurate current status.
 - `requirements.md`: scope, stable requirement IDs, accepted risks, and acceptance criteria.

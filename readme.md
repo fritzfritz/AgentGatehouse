@@ -10,7 +10,7 @@ The guiding decision is:
 
 ## Status
 
-This repository currently contains requirements and an architectural concept. It does not yet contain a working deployment. Cloud provider, infrastructure-as-code tooling, and several gateway integration details remain open.
+This repository currently contains requirements, an architectural concept, and the initial directory structure. Azure with Bicep is selected for the first implementation; no deployable templates or working deployment exist yet. Networking, private administration, and several gateway integration details remain open.
 
 ## What it is for
 
@@ -62,6 +62,16 @@ Agent Vault documents automatic OAuth refresh for refresh-token-based flows. Azu
 | [Agent instructions](AGENTS.md) | How coding agents should work in this repository |
 
 There are no installation commands yet. The first implementation milestone is a reproducible deployment where an agent can browse, develop, and use an authenticated project service while upstream credentials remain outside the worker and direct egress is blocked.
+
+## Repository structure and contribution workflow
+
+- [infra/azure/](infra/azure/README.md): Azure-specific Bicep infrastructure, to be implemented.
+- [bootstrap/](bootstrap/README.md): reusable Linux and Agent Vault setup, to be implemented.
+- [tests/acceptance/](tests/acceptance/README.md): shared behavioral acceptance criteria and future checks.
+
+A future AWS implementation will live separately under `infra/aws/`, using tooling chosen at that time. We share useful bootstrap logic and acceptance criteria, not a mandatory cross-cloud resource abstraction.
+
+Make changes on feature branches and integrate through pull requests. Do not commit directly to `main`. Repository-side branch protection has not been configured as part of this change.
 
 ## License
 

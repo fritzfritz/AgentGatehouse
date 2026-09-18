@@ -16,7 +16,7 @@ The operator grants capabilities in advance. Routine operations inside those gra
 
 | ID | Requirement |
 | --- | --- |
-| F-01 | Provision infrastructure reproducibly using IaC: a Linux project worker VM, a separate Agent Vault gateway, external network rules, and an administrative access path. Provider and IaC tool are undecided. |
+| F-01 | Provision infrastructure reproducibly using Azure Bicep initially: a Linux project worker VM, a separate Agent Vault gateway, external network rules, and an administrative access path. A future AWS deployment will be an independent provider-specific implementation. |
 | F-02 | Target a resource-rich worker VM with 64 GB RAM or more and many CPU cores. Allow agents to share available resources without initial per-agent CPU/RAM quotas or a custom resource scheduler. |
 | F-03 | Install and configure Codex and/or Claude Code, Git, Docker, and a practical development tool baseline. Support disposable, devcontainer-like environments. |
 | F-04 | Permit parallel cooperating agents and an agent-driven orchestrator. Do not require a new orchestration platform for v1. |
@@ -85,7 +85,7 @@ All criteria below remain untested.
 
 ## 7. Open choices
 
-- Cloud provider, region, VM sizing, OS image, and IaC language/tool.
+- Azure region, VM sizing, OS image, and deployment/tool versions. Azure and Bicep are selected; future AWS tooling remains undecided.
 - Private administrative access and worker-to-gateway transport.
 - Initial repository provider, model authentication mode, and cloud-log API.
 - Exact Agent Vault version and supported feature set.
