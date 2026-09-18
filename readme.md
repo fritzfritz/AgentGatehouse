@@ -62,3 +62,7 @@ Agent Vault documents automatic OAuth refresh for refresh-token-based flows. Azu
 | [Agent instructions](AGENTS.md) | How coding agents should work in this repository |
 
 There are no installation commands yet. The first implementation milestone is a reproducible deployment where an agent can browse, develop, and use an authenticated project service while upstream credentials remain outside the worker and direct egress is blocked.
+
+## License
+
+Agent Gatehouse's original code and documentation are licensed under the [MIT License](LICENSE) (also known as MIT Expat; SPDX: `MIT`). Third-party components and incorporated material retain their respective licenses and notices.
