@@ -16,6 +16,8 @@ All records below capture decisions agreed during the initial discussion on 2026
 | [ADR-006](#adr-006-maintain-arc42-and-a-separate-decision-history) | Maintain arc42 and a separate decision history | Accepted |
 | [ADR-007](#adr-007-azure-first-with-bicep-and-independent-provider-implementations) | Azure first with Bicep and independent provider implementations | Accepted |
 | [ADR-008](#adr-008-use-feature-branches-and-pull-requests) | Use feature branches and pull requests | Accepted |
+| [ADR-009](#adr-009-use-bastion-developer-for-browser-administration) | Use Bastion Developer for browser administration | Accepted |
+| [ADR-010](#adr-010-gateway-public-ip-with-inbound-deny-nsg) | Gateway public IP with inbound-deny NSG | Accepted |
 
 ## ADR-001: Project VM with external enforcement
 
@@ -195,6 +197,53 @@ Create feature branches before making changes and integrate through pull request
 ### Consequences
 
 Agents must check the current branch before edits and commits. This workflow applies from this decision onward and does not rewrite existing history. Repository-side branch protection is not configured by this documentation change; the recorded policy is not a claim of server-side enforcement.
+
+## ADR-009: Use Bastion Developer for browser administration
+
+Date: 2026-09-18. Status: Accepted.
+
+### Context
+
+The operator wants no public SSH and prefers the free Bastion Developer tier over paid native-client access or a public jump host.
+
+### Decision
+
+Deploy Bastion Developer in a supported Azure region. Both VMs accept private SSH from its platform path only. Perform gateway administration with Agent Vault's CLI from the browser terminal; copy a short-lived proxy-session bundle through the Bastion clipboard to the worker's hidden prompt. No upstream credentials or operator session tokens are transferred.
+
+### Alternatives considered
+
+- Bastion Standard: supports native tunneling/file transfer but adds a standing hourly charge.
+- Gateway SSH jump host: inexpensive but would expose restricted public SSH, contrary to the selected preference.
+- Separate VPN: not required for the initial browser-only workflow.
+
+### Consequences
+
+One VM connection at a time, no local SSH/SCP/VS Code tunneling, and no port-forwarded gateway web UI. Native browser OAuth callback workflows require future integration work; static credential injection can be initialized entirely from the terminal. Developer is a dev/test service; region availability and the platform-source NSG rule need live validation. Clipboard contents include a revocable proxy capability and must be handled accordingly. Affects F-12 and F-14.
+
+Reference: [Bastion SKU comparison](https://learn.microsoft.com/en-us/azure/bastion/bastion-sku-comparison).
+
+## ADR-010: Gateway public IP with inbound-deny NSG
+
+Date: 2026-09-18. Status: Accepted.
+
+### Context
+
+Agent Vault needs internet egress but no public inbound service. A NAT Gateway was initially proposed solely to keep both VM NICs private, adding cost unnecessary for the stated requirement.
+
+### Decision
+
+Attach a Standard static public IPv4 address only to the gateway NIC for outbound connectivity. Use an NSG to deny unsolicited internet ingress, permitting the worker proxy and Bastion management paths privately. Keep the worker without a public IP and with explicit outbound-deny rules. Provision no NAT Gateway.
+
+### Alternatives considered
+
+- NAT Gateway on the gateway subnet: achieves egress without a VM public IP, but adds standing and processing charges.
+- Enable public SSH/proxy endpoints: unnecessary and rejected.
+
+### Consequences
+
+The gateway has a publicly routable address but no permitted internet-initiated application connections. Verify this from an independent external host; local service bindings are additional protection, not the external boundary. Stateful response traffic for gateway-initiated connections remains allowed. Saves NAT cost while retaining the public-IP charge. Affects F-15 and architecture section 7.
+
+Reference: [Azure NSG behavior](https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview).
 
 ## Adding a record
 

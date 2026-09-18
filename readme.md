@@ -10,7 +10,7 @@ The guiding decision is:
 
 ## Status
 
-This repository currently contains requirements, an architectural concept, and the initial directory structure. Azure with Bicep is selected for the first implementation; no deployable templates or working deployment exist yet. Networking, private administration, and several gateway integration details remain open.
+This repository contains initial Azure Bicep templates, gateway/worker bootstrap scripts, deployment instructions, and local checks. Live Azure deployment and Agent Vault integration are not yet verified. Start with the [Azure deployment guide](docs/deployment-azure.md), including deployment-user permissions and required version pins.
 
 ## What it is for
 
@@ -61,13 +61,13 @@ Agent Vault documents automatic OAuth refresh for refresh-token-based flows. Azu
 | [Architecture decision records](docs/adr.md) | Why significant decisions were made and their consequences |
 | [Agent instructions](AGENTS.md) | How coding agents should work in this repository |
 
-There are no installation commands yet. The first implementation milestone is a reproducible deployment where an agent can browse, develop, and use an authenticated project service while upstream credentials remain outside the worker and direct egress is blocked.
+The implementation uses Bastion Developer for browser-only administration, a public IP on the gateway for outbound access, and NSGs denying internet-initiated inbound connections. The worker has no public IP; there is no NAT Gateway or paid Bastion resource. Setup uses the gateway CLI and a short-lived proxy-session handoff through the browser clipboard. See [deployment and validation](docs/deployment-azure.md) and [estimated costs](docs/deployment-azure.md#costs-and-shutdown).
 
 ## Repository structure and contribution workflow
 
-- [infra/azure/](infra/azure/README.md): Azure-specific Bicep infrastructure, to be implemented.
-- [bootstrap/](bootstrap/README.md): reusable Linux and Agent Vault setup, to be implemented.
-- [tests/acceptance/](tests/acceptance/README.md): shared behavioral acceptance criteria and future checks.
+- [infra/azure/](infra/azure/README.md): Azure-specific Bicep infrastructure and deployment helper.
+- [bootstrap/](bootstrap/README.md): gateway setup, session handoff, worker configuration and tool installation.
+- [tests/acceptance/](tests/acceptance/README.md): live smoke checks and remaining acceptance scenarios.
 
 A future AWS implementation will live separately under `infra/aws/`, using tooling chosen at that time. We share useful bootstrap logic and acceptance criteria, not a mandatory cross-cloud resource abstraction.
 

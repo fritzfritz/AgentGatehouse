@@ -1,0 +1,7 @@
+.local/
+*.local.bicepparam
+*.local.parameters.json
+infra/azure/main.json
+__pycache__/
+*.pyc
+.DS_Store

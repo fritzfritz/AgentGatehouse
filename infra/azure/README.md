@@ -1,11 +1,17 @@
 # Azure infrastructure
 
-Status: structure only; Bicep templates are not implemented and nothing has been deployed.
+Initial Bicep implementation; not yet deployed or validated against live Azure. Read the [deployment guide](../../docs/deployment-azure.md) before provisioning.
 
-This directory will contain Azure-specific infrastructure for the project worker VM, separate Agent Vault gateway, external network enforcement, and private administration. See [ADR-007](../../docs/adr.md#adr-007-azure-first-with-bicep-and-independent-provider-implementations) and [requirement F-01](../../requirements.md).
+| File | Purpose |
+| --- | --- |
+| [main.bicep](main.bicep) | VNet, two subnets/NSGs, Bastion Developer, gateway public IP, data disk, and two VMs |
+| [modules/vm.bicep](modules/vm.bicep) | Linux VM/NIC, SSH key authentication, pinned image version and cloud-init payload |
+| [example.bicepparam](example.bicepparam) | Nondeployable placeholders; copy to a gitignored local parameter file |
+| [deploy.sh](deploy.sh) | Explicit-subscription validation, what-if and deployment into an existing resource group |
+| [validate-parameters.py](validate-parameters.py) | Reject unfilled placeholders and mutable image references |
 
-Add Bicep entry points, modules, and clearly marked example parameters as the deployment design becomes concrete. Do not add empty deployment templates that could be mistaken for a working environment.
+The worker has no public IP or default outbound access. Its NSG allows new outbound application connections only to the gateway's TLS proxy port. Only the gateway has a public IP; internet-initiated ingress is denied. No NAT Gateway, paid Bastion, or VM managed identities are created.
 
-Before deployment implementation, decide the Azure region, VM images/sizes, network and DNS rules, gateway egress, management access, protected proxy transport, and bootstrap ordering. Upstream runtime secrets must not be embedded in templates or worker bootstrap data. Protect deployment parameters, history, and outputs even though Bicep does not require a separate IaC state backend.
+Bastion Developer provides browser terminals, not native SSH/SCP tunnels. The gateway's management API and raw proxy bind to loopback; a TLS listener exposes only the proxy to the worker's private IP. Exact regional platform behavior remains a live acceptance item. Upstream secrets do not belong in templates or bootstrap data.
 
-Reusable guest setup belongs in [bootstrap/](../../bootstrap/README.md). Validate observable behavior against [acceptance criteria](../../tests/acceptance/README.md). Keep Azure networking and identity explicit; no shared Azure/AWS resource abstraction is required.
+Run local compilation and checks as documented in the deployment guide. Do not treat a successful build or ARM validation as proof of the live boundary. See [bootstrap](../../bootstrap/README.md), [acceptance checks](../../tests/acceptance/README.md), and [ADRs](../../docs/adr.md).

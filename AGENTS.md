@@ -4,7 +4,7 @@
 
 Read [requirements.md](requirements.md), [docs/architecture.md](docs/architecture.md), and [docs/adr.md](docs/adr.md) before implementation. This project gives agents broad local freedom while enforcing external authority outside the worker VM.
 
-This repository currently documents a concept. Do not describe infrastructure or integrations as implemented, tested, or secure until supported by evidence.
+This repository contains an initial Azure implementation with local checks; live deployment and integrations remain unverified. Do not describe infrastructure or integrations as deployed, tested, or secure until supported by evidence. Follow [docs/deployment-azure.md](docs/deployment-azure.md) for the current operational workflow.
 
 ## Architectural constraints
 
@@ -17,6 +17,7 @@ This repository currently documents a concept. Do not describe infrastructure or
 - Public web leakage risk is accepted. Do not repeatedly block progress on that accepted tradeoff or claim that URL filtering eliminates it.
 - Prefer existing Agent Vault features over custom proxy code. Verify pinned-version behavior before adding a workaround.
 - Skills may guide API use. They must not retrieve upstream secrets into the worker or be treated as enforcement.
+- Use Bastion Developer for browser-only administration. Do not add paid Bastion, a NAT Gateway, public SSH, SCP/port-forwarding dependencies, or a jump host without a new decision. Only the gateway VM has a public IP, for outbound access; its NSG denies unsolicited internet ingress.
 
 ## Implementation approach
 

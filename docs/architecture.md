@@ -1,6 +1,6 @@
 # Agent Gatehouse architecture
 
-Status: initial concept, not a deployed or validated system. Recorded 2026-09-18.
+Status: initial Azure implementation with local checks; not deployed or validated against live Azure/Agent Vault. Recorded 2026-09-18. Operational details: [deployment guide](deployment-azure.md).
 
 Based on the user-supplied arc42 Template Version 9.0-EN, July 2025, maintained by Dr. Peter Hruschka, Dr. Gernot Starke, and contributors. See [arc42](https://arc42.org). The supplied template's 12 top-level sections are retained below; empty template examples have been replaced with project-specific content.
 
@@ -38,7 +38,7 @@ Agent Gatehouse provisions a powerful project VM for coding agents and a separat
 - External network enforcement and gateway administration are outside worker authority, including worker cloud IAM.
 - Initial application traffic is HTTP(S). AWS signing and full cloud CLI compatibility are deferred.
 - Public repository: no live credentials or sensitive deployment state in source control.
-- Azure with Bicep is selected for the initial implementation. Exact versions and management transport are undecided. Future AWS infrastructure will be independently implemented.
+- Azure with Bicep is selected. Bastion Developer provides browser-only administration. Only the gateway has a public IP, with unsolicited internet ingress denied; no NAT Gateway is provisioned. Exact deployment versions are operator-selected pins. Future AWS infrastructure will be independently implemented.
 
 ## 3. Context and Scope
 
@@ -105,20 +105,20 @@ The agent uses a project-scoped proxy session. Agent Vault resolves service rule
 
 Agent Vault's documented service matcher uses host, port, and path; it does not inspect method/query/body to authorize an operation. Its unmatched-host policy defaults to forwarding unless configured otherwise. A strict allowlist can use deny-on-unmatched. Broad browsing with explicit blacklisting remains an integration question, not an established built-in capability.
 
-The documented forward-proxy transport can expose proxy authentication in cleartext on the first hop. Select a protected network/tunnel or supported secure frontend arrangement; upstream TLS alone does not solve this. See [Agent Vault security](https://docs.agent-vault.dev/learn/security).
+The documented forward-proxy transport can expose proxy authentication in cleartext on the first hop. The implementation uses a worker loopback byte relay through verified TLS to stunnel on gateway private port 14443, which forwards only to Agent Vault's loopback proxy. The management API remains loopback-only. The relay adds transport encryption without custom HTTP authorization or credential injection. See [Agent Vault security](https://docs.agent-vault.dev/learn/security).
 
 ### Level 3
 
-No custom internal components have been designed or implemented yet. Add detail when a concrete integration requires it rather than inventing layers in advance.
+The [bootstrap directory](../bootstrap/README.md) contains a minimal TLS byte relay, session import/export and gateway-local administration helpers. These bridge browser-only provisioning and Agent Vault's APIs; they do not replace Agent Vault's HTTP policy or cryptography. Exact version compatibility is still unverified live.
 
 ## 6. Runtime View
 
 ### Provision and bootstrap
 
 1. Operator provisions the network boundary, gateway, and worker using IaC.
-2. Operator initializes gateway storage, project rules, and scoped credentials through a private channel.
-3. Worker tooling comes from a prepared image or installs through the available gateway.
-4. Worker receives proxy configuration, a public CA certificate, and a scoped proxy capability.
+2. Gateway cloud-init initializes protected storage and starts Agent Vault. The operator registers/logs in and configures rules through its CLI in Bastion Developer's browser terminal.
+3. Operator mints a proxy-only scoped session on the gateway and transfers only the session and public certificates via the Bastion clipboard to the worker's hidden input prompt.
+4. Worker installs proxy/CA configuration, starts its TLS relay, then installs tools through the gateway. No upstream or deployment credentials are handed off.
 5. Boundary tests run before accepting the environment for normal work.
 
 Bootstrap must never temporarily grant unrestricted internet access as an undocumented dependency.
@@ -144,7 +144,7 @@ Public requests pass through the selected browsing policy without project creden
 
 ### Infrastructure Level 1
 
-Initial logical deployment: one project worker VM and one separate gateway host/VM, connected through a private network and externally administered controls. Gateway infrastructure has internet egress; worker infrastructure has no direct internet route/permission.
+Initial implementation: one project worker VM and a separate gateway VM, in two subnets of `10.82.0.0/16`. The gateway has a Standard public IP for outbound access; NSGs deny internet-initiated inbound connections. The worker has no public IP/default outbound access and allows new outbound application connections only to gateway private port 14443. Bastion Developer provides browser administration without a dedicated Bastion subnet/public IP. No NAT Gateway exists.
 
 | Infrastructure | Contents | Authority |
 | --- | --- | --- |
@@ -155,7 +155,9 @@ Initial logical deployment: one project worker VM and one separate gateway host/
 
 ### Infrastructure Level 2
 
-Azure subnet layout, network security group rules, DNS arrangement, disks, secret provisioning, and private management transport remain open. Select these together so the no-bypass property survives worker root access. Do not assign a broad managed identity to the worker. The initial directory structure is present, but templates and bootstrap scripts are not yet implemented.
+The [Bicep implementation](../infra/azure/main.bicep) defines worker `10.82.1.4` and gateway `10.82.2.4`, explicit inbound/outbound rules, platform DNS/IMDS denies for the worker, and no managed identities. The gateway's private TLS port accepts only the worker source IP. Its management API and raw proxy bind to loopback. Bastion SSH is scoped to Developer's platform source `168.63.129.16/32`; confirm regional behavior live. Azure WireServer has platform exceptions to ordinary NSG filtering; no claim of absolute platform-network isolation is made.
+
+The default worker is D16s_v5 with 256 GiB OS storage; the gateway is B2ms with 64 GiB OS storage and a separate 32 GiB state disk. Gateway disk state includes protected master/transport keys and Agent Vault data. Bastion Developer means one browser VM connection at a time and no local SSH tunnels or SCP. See the [runbook](deployment-azure.md) for identity prerequisites, setup, costs and acceptance.
 
 Gateway persistence and backup are required operational concerns; worker recovery may recreate the VM. Define where unfinished work is saved before destructive recovery. There is no initial high-availability commitment or per-agent resource isolation.
 
@@ -193,6 +195,8 @@ The [ADR document](adr.md) records decisions and consequences:
 - ADR-006: Arc42 architecture plus a separate ADR history.
 - ADR-007: Azure first with Bicep and independent provider implementations.
 - ADR-008: Feature branches and pull requests; no direct commits to main.
+- ADR-009: Bastion Developer and browser-terminal administration.
+- ADR-010: Gateway public IP plus NSG, without NAT Gateway.
 
 An accepted ADR records intent, not successful implementation. Supersede records when decisions change.
 
@@ -215,7 +219,7 @@ Prioritize enforceable boundaries, credential separation, useful workflows, and 
 | OAuth token nears expiry | Gateway refreshes or returns authentication failure | A-09 |
 | Agent investigates a cloud issue | Scoped log queries work; other scopes are denied | A-10 |
 
-No measurements or test results exist yet. See [requirements](../requirements.md) for the complete milestone criteria.
+Local test coverage and commands are described in [acceptance checks](../tests/acceptance/README.md). No live Azure measurements or acceptance results exist yet. See [requirements](../requirements.md) for the complete milestone criteria.
 
 ## 11. Risks and Technical Debts
 
@@ -232,6 +236,9 @@ No measurements or test results exist yet. See [requirements](../requirements.md
 | Worker resource exhaustion/data loss | Accepted interruption risk; define artifact persistence and recovery. |
 | Cloud identity/signing integration gaps | Validate Azure flow; defer AWS signing unless brought into scope. |
 | Provider-hosted tools bypass local inspection | Explicitly decide which remote capabilities are allowed. |
+| Bastion Developer limits and shared platform path | Verify region and source rules; browser-only, one connection at a time; no native-client assumptions. |
+| Clipboard session handoff | Copy only the scoped capability/public certificates, clear clipboard, never export operator tokens. |
+| Bootstrap/API compatibility | Compile/static tests are insufficient; validate image provisioning, selected Agent Vault API and service readiness live. |
 
 ### Primary references
 

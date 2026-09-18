@@ -1,6 +1,6 @@
 # Agent Gatehouse requirements
 
-Status: agreed concept; implementation and verification pending.
+Status: agreed requirements; initial Azure implementation and local checks exist. Live acceptance remains pending.
 
 Recorded: 2026-09-18.
 
@@ -29,6 +29,8 @@ The operator grants capabilities in advance. Routine operations inside those gra
 | F-11 | Use Agent Vault's documented OAuth refresh support where applicable. Validate the actual provider, scopes, audience, expiry, and revocation behavior. |
 | F-12 | Provide private operator administration, persistent gateway state, and useful operational records that redact credentials. |
 | F-13 | Define a reproducible bootstrap path: either prepared worker images or gateway-first provisioning. |
+| F-14 | Use Bastion Developer for browser-based operator administration. No public SSH or paid Bastion is required. Accept one VM connection at a time and no native-client tunneling/file transfer. |
+| F-15 | Give only the gateway VM a public IP for outbound internet access, with NSGs denying unsolicited internet ingress. Do not provision a NAT Gateway. |
 
 ## 3. Security requirements
 
@@ -86,11 +88,11 @@ All criteria below remain untested.
 ## 7. Open choices
 
 - Azure region, VM sizing, OS image, and deployment/tool versions. Azure and Bicep are selected; future AWS tooling remains undecided.
-- Private administrative access and worker-to-gateway transport.
+- Live validation of Bastion Developer access and the worker-to-gateway TLS transport.
 - Initial repository provider, model authentication mode, and cloud-log API.
 - Exact Agent Vault version and supported feature set.
 - Broad browsing versus strict allowlisting; whether denylist requirements need an additional component.
 - Gateway persistence/backup mechanism and worker artifact recovery.
-- Bootstrap ordering and image/tool version management.
+- Exact reviewed image/tool version pins and live bootstrap compatibility; gateway-first and browser-terminal handoff are implemented.
 
 See [architecture](docs/architecture.md) for the design and [ADRs](docs/adr.md) for accepted decisions.
